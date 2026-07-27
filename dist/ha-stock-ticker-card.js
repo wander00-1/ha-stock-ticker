@@ -1,5 +1,5 @@
 (() => {
-  const CARD_VERSION = '0.1.0';
+  const CARD_VERSION = '0.1.0-beta.1';
 
   function fmtPrice(price, currency) {
     if (price === null || isNaN(price)) return '—';

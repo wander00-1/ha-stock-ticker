@@ -8,5 +8,5 @@
   "integration_type": "service",
   "issue_tracker": "https://github.com/wander00-1/ha-stock-ticker/issues",
   "requirements": [],
-  "version": "0.1.1"
+  "version": "0.2.0"
 }

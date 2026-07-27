@@ -53,8 +53,11 @@ Yahoo Finance chart API  →  Stock Ticker integration  →  sensor.xxx_stock_pr
 4. Repeat for each additional stock you want to track — every instance of
    the integration creates one price sensor.
 
-The integration polls every 5 minutes (matching the candle resolution — ASX
-only trades 10am–4pm AEST anyway, so there's no benefit to polling faster).
+The integration polls every 5 minutes, but only actually calls Yahoo Finance
+during ASX trading hours (Mon-Fri 10:00-16:00 Australia/Sydney) once it has
+fetched successfully at least once — outside that window the sensor just
+keeps its last known price rather than polling a closed market. Public
+holidays aren't accounted for.
 
 ## Sensor attributes
 
@@ -66,6 +69,7 @@ data, shaped like Yahoo's `chart.result[0]`:
 | `meta` | `previousClose`, `currency`, `longName`, `regularMarketTime`, etc. |
 | `timestamp` | Array of unix timestamps, one per 5-minute candle |
 | `indicators` | `quote[0].close` — array of close prices matching `timestamp` |
+| `market_open` | Whether the ASX is currently in its Mon-Fri 10:00-16:00 session |
 
 [ha-stock-ticker-card](https://github.com/wander00-1/ha-stock-ticker-card)
 reads these directly to draw the daily chart.

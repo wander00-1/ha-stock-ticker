@@ -3,16 +3,33 @@
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import time, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 
 from .const import CHART_URL, DEFAULT_SCAN_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
+
+ASX_TIMEZONE = ZoneInfo("Australia/Sydney")
+ASX_MARKET_OPEN = time(10, 0)
+ASX_MARKET_CLOSE = time(16, 0)
+
+
+def is_asx_market_open(now: Any = None) -> bool:
+    """Return whether the ASX is within its Mon-Fri 10:00-16:00 session.
+
+    Doesn't account for public holidays.
+    """
+    local = (now or dt_util.utcnow()).astimezone(ASX_TIMEZONE)
+    if local.weekday() >= 5:
+        return False
+    return ASX_MARKET_OPEN <= local.time() < ASX_MARKET_CLOSE
 
 
 class StockChartError(Exception):
@@ -45,7 +62,12 @@ async def fetch_chart_result(hass: HomeAssistant, symbol: str) -> dict[str, Any]
 
 
 class StockTickerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
-    """Coordinator that polls the Yahoo Finance chart endpoint for one symbol."""
+    """Coordinator that polls the Yahoo Finance chart endpoint for one symbol.
+
+    Once an initial fetch has succeeded, skips the actual Yahoo request
+    outside ASX trading hours — the sensor keeps its last known price
+    instead of polling a market that isn't moving.
+    """
 
     def __init__(self, hass: HomeAssistant, symbol: str) -> None:
         super().__init__(
@@ -57,6 +79,8 @@ class StockTickerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.symbol = symbol
 
     async def _async_update_data(self) -> dict[str, Any]:
+        if self.data is not None and not is_asx_market_open():
+            return self.data
         try:
             return await fetch_chart_result(self.hass, self.symbol)
         except StockChartError as err:

@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import StockTickerCoordinator
+from .coordinator import StockTickerCoordinator, is_asx_market_open
 
 
 async def async_setup_entry(
@@ -54,4 +54,5 @@ class StockTickerSensor(CoordinatorEntity[StockTickerCoordinator], SensorEntity)
             "meta": data.get("meta", {}),
             "timestamp": data.get("timestamp", []),
             "indicators": data.get("indicators", {}),
+            "market_open": is_asx_market_open(),
         }

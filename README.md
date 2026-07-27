@@ -1,81 +1,82 @@
-# HA Stock Ticker Card
+# Stock Ticker
 
-A Home Assistant integration + Lovelace card that displays ASX stock prices.
-Tap a stock to expand an intraday line chart for the day. Add stocks entirely
-from the UI — no YAML required.
+A Home Assistant custom integration that polls Yahoo Finance for a stock's
+current price and intraday chart data, and exposes it as a sensor — entirely
+through the UI, no YAML required.
+
+This is the backend half of a two-repo pair. Pair it with:
+
+- **[ha-stock-ticker-card](https://github.com/wander00-1/ha-stock-ticker-card)**
+  — a Lovelace card that displays the sensor(s) this integration creates,
+  with tap-to-expand daily charts
+
+(These are separate repos because HACS doesn't allow one repository to be
+both an *Integration* and a *Dashboard* category.)
 
 ---
 
 ## How it works
 
-Yahoo Finance's public chart endpoint returns everything needed for this card
-— current price, previous close, and 5-minute intraday candles — in a single
-call, but it doesn't send CORS headers, so the card can't fetch it directly
-from the browser (confirmed by testing). Instead, a small custom integration
-polls it server-side (where CORS doesn't apply) and exposes the data as
-sensor state + attributes. The card just reads that sensor.
+Yahoo Finance's public chart endpoint returns everything needed for a stock
+ticker — current price, previous close, and 5-minute intraday candles — in a
+single call, but it doesn't send CORS headers, so nothing running in a
+browser (e.g. a Lovelace card) can call it directly. This integration polls
+it server-side instead, where CORS doesn't apply, and exposes the result as
+one sensor per configured stock.
 
 ```
-Yahoo Finance chart API  →  Stock Ticker integration  →  ha-stock-ticker-card
+Yahoo Finance chart API  →  Stock Ticker integration  →  sensor.xxx_stock_price
 ```
-
-This repo contains two separate HACS installs:
-- **`ha_stock_ticker`** (category: *Integration*) — the backend. Adds a config
-  flow so you add a stock via **Settings → Devices & Services → Add
-  Integration**, no YAML.
-- **`ha-stock-ticker-card`** (category: *Dashboard*) — the frontend card that
-  reads the sensor(s) the integration creates.
 
 ---
 
 ## Installation
 
-### 1. Integration (backend — one stock per instance)
-
 **HACS**
-1. In HACS go to **Custom repositories**, add this repository URL, and select
-   **Integration** as the category (not Dashboard — that's the card, added
-   separately below).
+1. In HACS go to **Custom repositories**, add this repository URL, and
+   select **Integration** as the category.
 2. Install **Stock Ticker**, then restart Home Assistant.
-3. Go to **Settings → Devices & Services → Add Integration**, search for
-   **Stock Ticker**, and enter a ticker symbol as Yahoo Finance lists it
-   (e.g. `DRO.AX` for DroneShield on the ASX) and an optional display name.
-4. Repeat step 3 for each additional stock you want — every instance creates
-   one price sensor.
 
 **Manual**
 1. Copy the `custom_components/ha_stock_ticker/` folder from this repo into
    your Home Assistant `config/custom_components/` directory.
-2. Restart Home Assistant, then follow steps 3–4 above.
+2. Restart Home Assistant.
 
-The integration polls Yahoo every 5 minutes (matching the candle resolution
-— ASX only trades 10am–4pm AEST anyway, so there's no benefit to polling
-faster) and creates one sensor per stock with the current price as its state
-and the raw chart data (previous close, currency, intraday candles) as
-attributes.
+## Adding a stock
 
-### 2. Card (frontend)
+1. Go to **Settings → Devices & Services → Add Integration**, search for
+   **Stock Ticker**.
+2. Enter a ticker symbol as Yahoo Finance lists it (e.g. `DRO.AX` for
+   DroneShield on the ASX, `BHP.AX` for BHP) and an optional display name.
+3. The symbol is validated against Yahoo Finance before the entry is
+   created — an unknown symbol shows an error instead of a broken sensor.
+4. Repeat for each additional stock you want to track — every instance of
+   the integration creates one price sensor.
 
-**HACS**
-1. In HACS go to **Custom repositories**, add this same repository URL, and
-   select **Dashboard** as the category this time.
-2. Install **HA Stock Ticker Card** — HACS adds the resource automatically.
+The integration polls every 5 minutes (matching the candle resolution — ASX
+only trades 10am–4pm AEST anyway, so there's no benefit to polling faster).
 
-**Manual**
-1. Download [`dist/ha-stock-ticker-card.js`](dist/ha-stock-ticker-card.js) and copy it to your Home Assistant `/config/www/` directory.
-2. In Home Assistant go to **Settings → Dashboards → Resources** and add:
-   - **URL:** `/local/ha-stock-ticker-card.js`
-   - **Type:** JavaScript module
-3. Reload the browser, then add the card via the dashboard editor, picking
-   the sensor(s) the integration created in step 1.
+## Sensor attributes
+
+Each sensor's state is the current price. Its attributes carry the raw chart
+data, shaped like Yahoo's `chart.result[0]`:
+
+| Attribute | Description |
+|-----------|-------------|
+| `meta` | `previousClose`, `currency`, `longName`, `regularMarketTime`, etc. |
+| `timestamp` | Array of unix timestamps, one per 5-minute candle |
+| `indicators` | `quote[0].close` — array of close prices matching `timestamp` |
+
+[ha-stock-ticker-card](https://github.com/wander00-1/ha-stock-ticker-card)
+reads these directly to draw the daily chart.
 
 ---
 
-## Alternative: manual YAML sensor (skip the integration)
+## Alternative: manual YAML sensor (skip this integration)
 
 If you'd rather not install a custom integration, a plain HA `rest` sensor
-(built into core) can produce the same sensor shape the card expects —
-you just have to write the YAML yourself and add stocks by hand:
+(built into core) can produce the same sensor shape the card expects — you
+just have to write the YAML yourself and add stocks by hand:
 
 ```yaml
 rest:
@@ -98,49 +99,11 @@ additional stock, then restart Home Assistant after editing.
 
 ---
 
-## Card configuration
-
-```yaml
-type: custom:ha-stock-ticker-card
-title: Watchlist          # optional — card header text
-stocks:
-  - name: DroneShield      # optional — defaults to the ticker symbol
-    entity: sensor.dro_stock_price
-  - entity: sensor.bhp_stock_price
-```
-
-### Options
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `title` | string | No | Card header text |
-| `stocks` | list | Yes | One or more stock definitions (see below) |
-
-**Stock definition**
-
-| Key | Type | Required | Description |
-|-----|------|----------|-------------|
-| `name` | string | No | Display label — defaults to the ticker symbol from the sensor |
-| `entity` | string | Yes | Entity ID of the price sensor for this stock (created by the integration, or your own `rest` sensor) |
-
----
-
-## Behaviour
-
-- Tap a stock row to expand/collapse its intraday chart
-- Price change and % change (vs previous close) shown in green (up), red
-  (down), or grey (flat)
-- Dashed reference line in the chart marks the previous close
-- Card colours follow the active HA theme; override the up/down colours with
-  `--stock-up-color`/`--stock-down-color` CSS variables in your theme if
-  desired
-
----
-
 ## Contributing
 
 Issues and pull requests are welcome. Please update `CHANGELOG.md` and bump
-the version in `dist/ha-stock-ticker-card.js` before opening a release PR.
+the version in `custom_components/ha_stock_ticker/manifest.json` before
+opening a release PR.
 
 ---
 

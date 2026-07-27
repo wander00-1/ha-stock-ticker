@@ -1,0 +1,12 @@
+{
+  "domain": "ha_stock_ticker",
+  "name": "Stock Ticker",
+  "codeowners": ["@wander00-1"],
+  "config_flow": true,
+  "documentation": "https://github.com/wander00-1/ha-stock-ticker",
+  "iot_class": "cloud_polling",
+  "integration_type": "service",
+  "issue_tracker": "https://github.com/wander00-1/ha-stock-ticker/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

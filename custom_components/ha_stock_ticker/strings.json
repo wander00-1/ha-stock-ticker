@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add a stock",
+        "description": "Enter a ticker symbol as Yahoo Finance lists it, e.g. DRO.AX for DroneShield on the ASX.",
+        "data": {
+          "symbol": "Ticker symbol",
+          "name": "Display name (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_symbol": "Couldn't find that ticker symbol on Yahoo Finance. Check it includes the exchange suffix, e.g. DRO.AX.",
+      "cannot_connect": "Couldn't reach Yahoo Finance. Try again in a moment."
+    },
+    "abort": {
+      "already_configured": "This stock is already configured."
+    }
+  }
+}

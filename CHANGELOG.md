@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-28
+
+### Added
+- `ha_stock_ticker` custom integration with a config flow — add a stock via
+  **Settings → Devices & Services → Add Integration**, no YAML editing needed
+- Integration validates the ticker symbol against Yahoo Finance before
+  creating the entry, and polls every 5 minutes
+- Integration's sensor attributes (`meta`, `timestamp`, `indicators`) match
+  the manual `rest` sensor shape, so the card works unchanged with either
+
 ## [0.1.0] - 2026-07-28
 
 ### Added

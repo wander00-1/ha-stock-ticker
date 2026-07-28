@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sensor keeps its last known price instead of polling a closed market.
   Public holidays aren't accounted for.
 - New `market_open` sensor attribute reflecting current session status
+- Trading-hours logic moved into its own dependency-free `market_hours.py`,
+  with a `tests/` suite (`python -m unittest discover -s tests`) that runs
+  without a full Home Assistant install
 
 ## [0.1.1] - 2026-07-28
 

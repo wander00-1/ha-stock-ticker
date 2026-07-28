@@ -10,7 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import StockTickerCoordinator, is_asx_market_open
+from .coordinator import StockTickerCoordinator
+from .market_hours import is_asx_market_open
 
 
 async def async_setup_entry(

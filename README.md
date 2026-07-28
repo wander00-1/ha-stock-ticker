@@ -103,6 +103,18 @@ additional stock, then restart Home Assistant after editing.
 
 ---
 
+## Testing
+
+```
+python -m unittest discover -s tests
+```
+
+Covers `market_hours.is_asx_market_open` (session boundaries, weekends,
+timezone conversion). It's kept in its own dependency-free module
+specifically so this runs without installing Home Assistant. The
+Yahoo-fetching and coordinator code isn't unit-tested — that needs a real HA
+test harness and is checked manually against a live instance instead.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please update `CHANGELOG.md` and bump

@@ -3,33 +3,17 @@
 from __future__ import annotations
 
 import logging
-from datetime import time, timedelta
+from datetime import timedelta
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.util import dt as dt_util
 
 from .const import CHART_URL, DEFAULT_SCAN_INTERVAL
+from .market_hours import is_asx_market_open
 
 _LOGGER = logging.getLogger(__name__)
-
-ASX_TIMEZONE = ZoneInfo("Australia/Sydney")
-ASX_MARKET_OPEN = time(10, 0)
-ASX_MARKET_CLOSE = time(16, 0)
-
-
-def is_asx_market_open(now: Any = None) -> bool:
-    """Return whether the ASX is within its Mon-Fri 10:00-16:00 session.
-
-    Doesn't account for public holidays.
-    """
-    local = (now or dt_util.utcnow()).astimezone(ASX_TIMEZONE)
-    if local.weekday() >= 5:
-        return False
-    return ASX_MARKET_OPEN <= local.time() < ASX_MARKET_CLOSE
 
 
 class StockChartError(Exception):

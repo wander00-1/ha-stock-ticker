@@ -11,7 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import CHART_URL, DEFAULT_SCAN_INTERVAL
-from .market_hours import is_asx_market_open
+from .market_hours import is_asx_market_open, should_poll
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,9 +48,10 @@ async def fetch_chart_result(hass: HomeAssistant, symbol: str) -> dict[str, Any]
 class StockTickerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator that polls the Yahoo Finance chart endpoint for one symbol.
 
-    Once an initial fetch has succeeded, skips the actual Yahoo request
-    outside ASX trading hours — the sensor keeps its last known price
-    instead of polling a market that isn't moving.
+    Skips the actual Yahoo request outside ASX trading hours, except for one
+    extra fetch on the open->closed transition so the last price/timestamp
+    reflects the real close rather than whichever poll (on a fixed interval
+    unrelated to market close) happened to land last before 4pm.
     """
 
     def __init__(self, hass: HomeAssistant, symbol: str) -> None:
@@ -61,9 +62,14 @@ class StockTickerCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
         )
         self.symbol = symbol
+        self._was_market_open = True  # ensures the very first cycle always fetches
 
     async def _async_update_data(self) -> dict[str, Any]:
-        if self.data is not None and not is_asx_market_open():
+        market_open = is_asx_market_open()
+        fetch = should_poll(market_open, self._was_market_open, self.data is not None)
+        self._was_market_open = market_open
+
+        if not fetch:
             return self.data
         try:
             return await fetch_chart_result(self.hass, self.symbol)

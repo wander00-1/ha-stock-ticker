@@ -64,5 +64,22 @@ class TestIsAsxMarketOpen(unittest.TestCase):
         self.assertIsInstance(result, bool)
 
 
+class TestShouldPoll(unittest.TestCase):
+    def test_always_fetches_when_no_data_yet(self):
+        # Even if the market happens to be closed on the very first cycle.
+        self.assertTrue(market_hours.should_poll(market_open=False, was_open_last_check=False, has_data=False))
+
+    def test_fetches_while_market_is_open(self):
+        self.assertTrue(market_hours.should_poll(market_open=True, was_open_last_check=True, has_data=True))
+
+    def test_fetches_once_more_on_the_open_to_closed_transition(self):
+        # This is the fix for the "last updated" timestamp freezing well
+        # before the actual close instead of reflecting it.
+        self.assertTrue(market_hours.should_poll(market_open=False, was_open_last_check=True, has_data=True))
+
+    def test_skips_once_the_transition_fetch_has_happened(self):
+        self.assertFalse(market_hours.should_poll(market_open=False, was_open_last_check=False, has_data=True))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -55,9 +55,11 @@ Yahoo Finance chart API  →  Stock Ticker integration  →  sensor.xxx_stock_pr
 
 The integration polls every 5 minutes, but only actually calls Yahoo Finance
 during ASX trading hours (Mon-Fri 10:00-16:00 Australia/Sydney) once it has
-fetched successfully at least once — outside that window the sensor just
-keeps its last known price rather than polling a closed market. Public
-holidays aren't accounted for.
+fetched successfully at least once. It always fetches once more on the
+open→closed transition (so the last price/timestamp reflects the real close,
+not whichever poll happened to land last before 4pm), then stays frozen on
+that closing price until the market reopens. Public holidays aren't
+accounted for.
 
 ## Sensor attributes
 
@@ -110,7 +112,8 @@ python -m unittest discover -s tests
 ```
 
 Covers `market_hours.is_asx_market_open` (session boundaries, weekends,
-timezone conversion). It's kept in its own dependency-free module
+timezone conversion) and `market_hours.should_poll` (the open→closed
+transition-fetch logic). Both are kept in their own dependency-free module
 specifically so this runs without installing Home Assistant. The
 Yahoo-fetching and coordinator code isn't unit-tested — that needs a real HA
 test harness and is checked manually against a live instance instead.

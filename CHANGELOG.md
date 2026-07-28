@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-28
+
+### Fixed
+- The market-hours gate was a plain "skip while closed" check, so the last
+  price/timestamp could freeze well before the actual 4pm close depending
+  on where the coordinator's fixed 5-minute polling interval happened to
+  land (it isn't aligned to wall-clock or to market close). Now always
+  fetches once more on the open→closed transition, so the last update
+  reflects the real closing print instead of an arbitrary earlier poll.
+- New `should_poll` helper (in `market_hours.py`, unit tested) makes this
+  decision independent of `DataUpdateCoordinator` for testability
+
 ## [0.2.0] - 2026-07-28
 
 ### Added

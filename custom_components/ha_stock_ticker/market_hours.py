@@ -23,3 +23,15 @@ def is_asx_market_open(now: datetime | None = None) -> bool:
     if local.weekday() >= 5:
         return False
     return ASX_MARKET_OPEN <= local.time() < ASX_MARKET_CLOSE
+
+
+def should_poll(market_open: bool, was_open_last_check: bool, has_data: bool) -> bool:
+    """Decide whether to hit Yahoo Finance on this coordinator cycle.
+
+    The coordinator polls on a fixed interval from whenever it happened to
+    start, not aligned to market close, so a plain "skip while closed" gate
+    can freeze the price well before the actual close depending on timing.
+    Fetching once more on the open->closed transition captures the real
+    closing print instead of an arbitrary earlier poll.
+    """
+    return not has_data or market_open or was_open_last_check
